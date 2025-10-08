@@ -1,0 +1,40 @@
+# /etc/nginx/conf.d/nginx-lb.conf
+# Configuración de balanceo para biometría y registro
+
+# Upstreams (definen los backends)
+upstream biometria_backend {
+    server biometria_ai:8000;
+}
+
+upstream registro_backend {
+    server php_integrator:9000;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    # Redirección biometría
+    location /biometria/ {
+        proxy_pass http://biometria_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Redirección registro
+    location /registro/ {
+        proxy_pass http://registro_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Seguridad básica
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy no-referrer-when-downgrade always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}

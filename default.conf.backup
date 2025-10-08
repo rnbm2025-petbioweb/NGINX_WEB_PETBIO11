@@ -1,0 +1,665 @@
+
+# ======================================
+# Redirección HTTP a HTTPS
+# ======================================
+server {
+    listen 80;
+    server_name siac2025.com www.siac2025.com;
+    return 301 https://$host$request_uri;
+}
+
+# ======================================
+# Servidor principal HTTPS siac2025.com
+# ======================================
+server {
+    listen 443 ssl;
+    server_name siac2025.com www.siac2025.com;
+
+    root /var/www/siac2025.com;
+    index index.php index.html;
+
+    ssl_certificate     /etc/letsencrypt/live/siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Cloudflare: IPs reales
+    set_real_ip_from 173.245.48.0/20;
+    set_real_ip_from 103.21.244.0/22;
+    set_real_ip_from 103.22.200.0/22;
+    set_real_ip_from 103.31.4.0/22;
+    set_real_ip_from 141.101.64.0/18;
+    set_real_ip_from 108.162.192.0/18;
+    set_real_ip_from 190.93.240.0/20;
+    set_real_ip_from 188.114.96.0/20;
+    set_real_ip_from 197.234.240.0/22;
+    set_real_ip_from 198.41.128.0/17;
+    set_real_ip_from 162.158.0.0/15;
+    set_real_ip_from 104.16.0.0/13;
+    set_real_ip_from 104.24.0.0/14;
+    set_real_ip_from 172.64.0.0/13;
+    set_real_ip_from 131.0.72.0/22;
+    real_ip_header CF-Connecting-IP;
+
+    # Headers de seguridad
+    include /etc/nginx/security-headers.conf;
+
+    # Content Security Policy (CSP) con Tailwind
+    add_header Content-Security-Policy "
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://*.googlesyndication.com https://cdn.tailwindcss.com https://www.googletagmanager.com https://www.google-analytics.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com;
+        img-src 'self' data: https://*.googlesyndication.com https://*.google-analytics.com https://*.doubleclick.net;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://www.google-analytics.com https://*.doubleclick.net;
+        frame-src https://*.googlesyndication.com https://*.doubleclick.net;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'self';
+    " always;
+
+    # Rutas y seguridad
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Bloquea acceso a archivos sensibles
+    location ~* \.(?:conf|php|sh|sql|bak|env|yml|ini|log)$ {
+        deny all;
+        return 403;
+    }
+
+    # Archivo ads.txt
+    location = /ads.txt {
+        default_type text/plain;
+        root /var/www/siac2025.com;
+    }
+
+    # Archivos estáticos (cache)
+    location ~* \.(?:jpg|jpeg|png|gif|ico|webp|svg|css|js|woff2?|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+    }
+
+    access_log /var/log/nginx/siac2025-access.log;
+    error_log /var/log/nginx/siac2025-error.log;
+}
+
+
+############################################
+# BLOQUE API petbiometria.siac2025.com
+############################################
+server {
+    listen 80;
+    server_name petbiometria.siac2025.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name petbiometria.siac2025.com;
+
+    ssl_certificate /etc/letsencrypt/live/petbiometria.siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/petbiometria.siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    include /etc/nginx/security-headers.conf;
+
+    add_header Content-Security-Policy "
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://*.googlesyndication.com https://www.googletagmanager.com https://www.google-analytics.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com;
+        img-src 'self' data: https://*.googlesyndication.com https://*.google-analytics.com https://*.doubleclick.net;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://www.google-analytics.com https://*.doubleclick.net;
+        frame-src https://*.googlesyndication.com https://*.doubleclick.net;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'self';
+    " always;
+
+    location / {
+ 
+        proxy_pass http://biometria_ai:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~* \.(?:jpg|jpeg|png|gif|ico|webp|svg|css|js|woff2?|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+    }
+
+    access_log /var/log/nginx/petbiometria-access.log;
+    error_log /var/log/nginx/petbiometria-error.log;
+}
+
+###########################################
+# BLOQUE FORMULARIOS + WORDPRESS
+# registro.siac2025.com
+###########################################
+
+# Redirección HTTP → HTTPS
+server {
+    listen 80;
+    server_name registro.siac2025.com www.registro.siac2025.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name registro.siac2025.com www.registro.siac2025.com;
+
+    # Certificados SSL
+    ssl_certificate     /etc/letsencrypt/live/registro.siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/registro.siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Seguridad general
+    include /etc/nginx/security-headers.conf;
+
+    add_header Content-Security-Policy "
+        default-src * 'self' data: blob:;
+        script-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:;
+        style-src * 'self' 'unsafe-inline' data:;
+        img-src * data: blob:;
+        font-src * data:;
+        connect-src * data:;
+        frame-src * data:;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'self';
+    " always;
+
+    # Root principal (WordPress base)
+    root /var/www/registro.siac2025.com;
+    index index.php index.html index.htm;
+
+    ###########################################
+    # BLOQUES DE UBICACIÓN
+    ###########################################
+
+    # Archivos estáticos de WordPress Petbio
+    location ^~ /formularios/wordpress_petbio/wp-content/ {
+        root /home/josornol341/petbio11-formularios/formularios/wordpress_petbio/;
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+    }
+
+    # Formularios PHP
+    location ^~ /formularios/ {
+        proxy_pass http://php_web:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once off;
+    }
+
+    # Formularios seguros PHP
+    location ^~ /formularios-seguros/ {
+        proxy_pass http://php_secure_web:80/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # API Biometría (Flask / Python)
+    location /api/ {
+        proxy_pass http://biometria_ai:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WordPress principal
+    location / {
+        proxy_pass http://wordpress:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    ###########################################
+    # CACHÉ Y ESTÁTICOS
+    ###########################################
+
+    # Archivos estáticos de WordPress (precisos)
+    location ~* ^/(wp-content|wp-includes|wp-admin|wp-json)/.*\.(?:css|js|jpg|jpeg|png|gif|webp|ico|svg|ttf|woff|woff2|eot)$ {
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+    }
+
+    # Archivos estáticos generales
+    location ~* \.(?:jpg|jpeg|png|gif|ico|webp|svg|css|js|woff2?|ttf|eot)$ {
+        access_log off;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+    }
+
+    ###########################################
+    # LOGS
+    ###########################################
+    access_log /var/log/nginx/registro-access.log;
+    error_log  /var/log/nginx/registro-error.log;
+}
+
+############################################
+# BLOQUE PETBIO LANDING
+# petbio.siac2025.com
+############################################
+
+
+############################################
+# BLOQUE PETBIO LANDING + FORMULARIOS SEGUROS
+# petbio.siac2025.com
+############################################
+
+server {
+    listen 80;
+    server_name petbio.siac2025.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name petbio.siac2025.com;
+
+    root /usr/share/nginx/html/petbio_landing;
+    index index.php index.html;
+
+    ssl_certificate /etc/letsencrypt/live/petbio.siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/petbio.siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Seguridad
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()";
+    include /etc/nginx/security-headers.conf;
+
+    client_max_body_size 250M;
+
+    add_header Content-Security-Policy "
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://*.googlesyndication.com https://*.googleadservices.com https://*.doubleclick.net https://cdn.tailwindcss.com https://www.googletagmanager.com https://www.google-analytics.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com;
+        img-src 'self' data: blob: https:;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self' https://www.google-analytics.com https://*.doubleclick.net;
+        frame-src https://*.googlesyndication.com https://*.doubleclick.net;
+        object-src 'none';
+        base-uri 'self';
+        form-action 'self';
+        frame-ancestors 'self';
+    " always;
+
+    ###########################################################
+    # 🔐 SEGURIDAD PARA OCULTAR ARCHIVOS OCULTOS
+    ###########################################################
+    location ~ /\. {
+        deny all;
+    }
+
+    ###########################################################
+    # 📄 FORMULARIOS EXPLÍCITOS COMO loginpetbio.php, etc.
+    ###########################################################
+    location ~ ^/(loginpetbio|registropetbio)\.php$ {
+        include fastcgi_params;
+        fastcgi_pass php_secure_web:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_index index.php;
+    }
+
+    ###########################################################
+    # 📁 FORMULARIOS EN SUBCARPETA /dir_formularios/
+    ###########################################################
+    location ^~ /dir_formularios/ {
+        alias /usr/share/nginx/html/petbio_landing/dir_formularios/;
+        index index.php;
+        location ~ \.php$ {
+            include fastcgi_params;
+            fastcgi_pass php_secure_web:9000;
+            fastcgi_param SCRIPT_FILENAME /usr/share/nginx/html/petbio_landing/dir_formularios$fastcgi_script_name;
+            fastcgi_index index.php;
+        }
+    }
+
+    ###########################################################
+    # 🧠 ENRUTADOR MVC (Controlador central)
+    ###########################################################
+    location / {
+        try_files $uri $uri/ /dir_vistas/index.php?$query_string;
+    }
+
+    ###########################################################
+    # ⚙️ PHP genérico para otros casos (último recurso)
+    ###########################################################
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass php_secure_web:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_index index.php;
+    }
+
+    ###########################################################
+    # 🪧 ARCHIVOS PÚBLICOS ESPECIALES (ej. ads.txt)
+    ###########################################################
+    location = /ads.txt {
+        root /usr/share/nginx/html/petbio;
+    }
+
+    ###########################################################
+    # ⚡ CACHE DE ESTÁTICOS
+    ###########################################################
+    location ~* \.(?:jpg|jpeg|png|gif|ico|webp|svg|css|js|woff2?|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+    }
+
+    ###########################################################
+    # 📜 LOGS
+    ###########################################################
+    access_log /var/log/nginx/petbio-access.log;
+    error_log /var/log/nginx/petbio-error.log;
+}
+
+
+
+#############################################
+#############################################
+
+server {
+    listen 80;
+    server_name admin.siac2025.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name admin.siac2025.com;
+
+    ssl_certificate /etc/letsencrypt/live/admin.siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/admin.siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Seguridad opcional
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    # Opcional: autenticación básica
+    # auth_basic "Área restringida";
+    # auth_basic_user_file /etc/nginx/.htpasswd;
+
+    location / {
+        proxy_pass http://phpmyadmin:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# =============================================
+# CRM PETBIO - Node.js backend
+# crm.siac2025.com
+# =============================================
+
+server {
+    listen 80;
+    server_name crm.siac2025.com;
+
+    # Redirigir todo a HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+
+    # Carpeta para validación de Certbot
+    location /.well-known/acme-challenge/ {
+        root /usr/share/nginx/html/crm_petbio;
+        allow all;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name crm.siac2025.com;
+
+    ssl_certificate /etc/letsencrypt/live/crm.siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/crm.siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Seguridad general
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()";
+    include /etc/nginx/security-headers.conf;
+
+    client_max_body_size 250M;
+
+    # Bloquear archivos ocultos
+    location ~ /\. {
+        deny all;
+    }
+
+    # Carpeta para validación de Certbot
+    location /.well-known/acme-challenge/ {
+        root /usr/share/nginx/html/crm_petbio;
+        allow all;
+    }
+
+    # Proxy hacia backend Node.js
+    location / {
+        proxy_pass http://crm_backend:4000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Archivos estáticos opcionales (si Node.js sirve estáticos)
+    location ~* \.(?:jpg|jpeg|png|gif|ico|webp|svg|css|js|woff2?|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+    }
+
+    access_log /var/log/nginx/crm-access.log;
+    error_log /var/log/nginx/crm-error.log;
+}
+
+
+############################################
+# BLOQUE BOT PETBIO
+# bot.siac2025.com
+############################################
+############################################
+# BLOQUE BOT PETBIO - Node.js WhatsApp Bot
+############################################
+
+server {
+    listen 80;
+    server_name bot.siac2025.com;
+
+    # Redirigir todo a HTTPS
+    location / {
+        return 301 https://$host$request_uri;
+    }
+
+    # Carpeta para validación de Certbot
+    location /.well-known/acme-challenge/ {
+        root /usr/share/nginx/html/bot_petbio;
+        allow all;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name bot.siac2025.com;
+
+    ssl_certificate /etc/letsencrypt/live/bot.siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/bot.siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # Encabezados de seguridad
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()";
+    include /etc/nginx/security-headers.conf;
+
+    client_max_body_size 250M;
+
+    # Bloquear archivos ocultos
+    location ~ /\. {
+        deny all;
+    }
+
+    # Carpeta para validación de Certbot
+    location /.well-known/acme-challenge/ {
+        root /usr/share/nginx/html/bot_petbio;
+        allow all;
+    }
+
+    # Proxy hacia tu servidor Node.js
+    location / {
+        proxy_pass http://whatsapp_bot:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+      
+   }
+
+
+    # Logs del bot
+    access_log /var/log/nginx/bot-access.log;
+    error_log /var/log/nginx/bot-error.log;
+}
+
+
+###############
+######apipet
+server {
+    listen 80;
+    server_name apipet.siac2025.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+
+    server_name apipetbio.siac2025.com;
+
+    ssl_certificate /etc/letsencrypt/live/apipetbio.siac2025.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/apipetbio.siac2025.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    client_max_body_size 100M;
+
+    location / {
+        proxy_pass http://php_integrator:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    access_log /var/log/nginx/apipetbio-access.log;
+    error_log /var/log/nginx/apipetbio-error.log;
+}
+#docker logs --tail 50 -f nginx_web
+#docker logs --tail 50 -f whatsapp_bot
+#docker logs --tail 50 -f crm_backend
+# Definición del upstream (fuera de cualquier server {})
+#pstream mail_app {
+ #  server php_secure_web:9000;
+#
+
+# Redirige HTTP a HTTPS
+server {
+    listen 80;
+    server_name mail.siac2025.com;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name mail.siac2025.com;
+
+    ssl_certificate /etc/ssl/certs/fullchain.pem;
+    ssl_certificate_key /etc/ssl/private/privkey.pem;
+
+    include /etc/nginx/security-headers.conf;
+
+    root /var/www/html/mail_app;  # Ajusta según tu ruta PHP
+    index index.php index.html index.htm;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass php_secure_web:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+}
+
