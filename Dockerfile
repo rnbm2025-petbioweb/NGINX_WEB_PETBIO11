@@ -71,4 +71,5 @@ EXPOSE 80 443
 # ---------------------------------------------------------
 # 🚀 Comando final: iniciar PHP y Nginx juntos
 # ---------------------------------------------------------
-CMD service php-fpm start && nginx -g "daemon off;"
+#CMD service php-fpm start && nginx -g "daemon off;"
+CMD php-fpm -D && nginx -g "daemon off;"
