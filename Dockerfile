@@ -1,14 +1,14 @@
 # =========================================================
-# 🐳 Contenedor unificado PETBIO: PHP 8.2 + Nginx + Landing
+# 🐳 Contenedor PETBIO: PHP 8.2 + Nginx + Landing
 # =========================================================
 
 FROM php:8.2-fpm
 
 # ---------------------------------------------------------
-# 🧩 Instalar Nginx y extensiones PHP necesarias
+# 🧩 Instalar Nginx, Git y extensiones PHP necesarias
 # ---------------------------------------------------------
 RUN apt-get update && \
-    apt-get install -y nginx nano bash curl unzip && \
+    apt-get install -y nginx git curl unzip nano && \
     docker-php-ext-install mysqli pdo pdo_mysql && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -20,14 +20,11 @@ COPY security-headers.conf /etc/nginx/security-headers.conf
 COPY conf.d/ /etc/nginx/conf.d/
 
 # ---------------------------------------------------------
-# 📁 Copiar el código del landing y formularios
+# 📁 Clonar el código del landing desde GitHub
 # ---------------------------------------------------------
-COPY petbio_landing /var/www/html/petbio_landing
-
-# ---------------------------------------------------------
-# 🔐 Permisos correctos para PHP/Nginx
-# ---------------------------------------------------------
-RUN chown -R www-data:www-data /var/www/html && chmod -R 755 /var/www/html
+RUN git clone https://github.com/rnbm2025-petbioweb/petbio11-platform.git /var/www/html/petbio_landing && \
+    chown -R www-data:www-data /var/www/html/petbio_landing && \
+    chmod -R 755 /var/www/html/petbio_landing
 
 # ---------------------------------------------------------
 # 🔧 Configuración de PHP-FPM
