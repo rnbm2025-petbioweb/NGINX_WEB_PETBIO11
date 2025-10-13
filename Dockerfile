@@ -72,7 +72,7 @@ EXPOSE 80 443
 # 🚀 Comando final: iniciar PHP y Nginx juntos
 # ---------------------------------------------------------
 CMD service php-fpm start && nginx -g "daemon off;"
-
+#CMD service php-fpm start && nginx -g "daemon off;"
 
 # Dockerfile final para staging con Nginx 1.22-extras (soporta more_set_headers)
 #FROM nginx:1.22-extras
@@ -87,7 +87,7 @@ CMD service php-fpm start && nginx -g "daemon off;"
 #CMD ["nginx", "-g", "daemon off;"]
 
 
-FROM ./petbio_landing/Dockerfile
+#FROM ./petbio_landing/Dockerfile
 
 
 
