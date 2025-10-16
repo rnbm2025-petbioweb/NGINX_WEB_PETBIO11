@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: petbio11-nginx
+    env: docker
+    plan: free  # o starter, según tu plan actual
+    dockerfilePath: ./Dockerfile
+    autoDeploy: false          # 🔥 evita reconstrucciones automáticas
+    buildCommand: ""           # no necesita comandos extras, usa Dockerfile
+    startCommand: ""           # Render ejecuta el CMD del Dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: America/Bogota
+    disk:
+      name: nginx-cache
+      mountPath: /var/cache/nginx
+      sizeGB: 1                # espacio para cache persistente (opcional)
+      
