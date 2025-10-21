@@ -1,0 +1,39 @@
+name: 🚀 Build & Push PETBIO11 to GHCR
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧩 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔐 Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: 🧱 Build NGINX image
+        run: |
+          docker build ./NGINX_WEB_PETBIO11 \
+            -f ./NGINX_WEB_PETBIO11/Dockerfile \
+            -t ghcr.io/${{ github.repository_owner }}/nginx_petbio11:latest
+
+      - name: 🧪 Build Platform image
+        run: |
+          docker build ./petbio11-platform \
+            -f ./petbio11-platform/Dockerfile \
+            -t ghcr.io/${{ github.repository_owner }}/petbio_platform:latest
+
+      - name: 🚀 Push images to GHCR
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/nginx_petbio11:latest
+          docker push ghcr.io/${{ github.repository_owner }}/petbio_platform:latest
