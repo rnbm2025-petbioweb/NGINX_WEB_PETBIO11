@@ -2,7 +2,7 @@ name: 🚀 Build PETBIO11 Docker Images
 
 on:
   push:
-    branches: [ "main" ]     # ejecuta cuando haces push a main
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -15,25 +15,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Iniciar sesión en Docker Hub (opcional si vas a publicar)
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # 2️⃣ Autenticarse en GitHub Container Registry (GHCR)
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GH_TOKEN }}" | docker login ghcr.io -u rnbm2025-petbioweb --password-stdin
 
       # 3️⃣ Construir imagen NGINX
       - name: Build NGINX image
-        run: docker build NGINX_WEB_PETBIO11 --file NGINX_WEB_PETBIO11/Dockerfile --tag nginx_petbio:latest
+        run: docker build ./NGINX_WEB_PETBIO11 -f ./NGINX_WEB_PETBIO11/Dockerfile -t ghcr.io/rnbm2025-petbioweb/nginx_petbio:latest
 
-      # 4️⃣ Construir imagen principal de plataforma
-      - name: Build platform image
-        run: docker build petbio11-platform --file petbio11-platform/Dockerfile --tag petbio_platform:latest
+      # 4️⃣ Construir imagen de plataforma principal
+      - name: Build Platform image
+        run: docker build ./petbio11-platform -f ./petbio11-platform/Dockerfile -t ghcr.io/rnbm2025-petbioweb/petbio_platform:latest
 
-      # 5️⃣ (Opcional) Subir imágenes a Docker Hub
-      - name: Push images to Docker Hub
+      # 5️⃣ Subir las imágenes a GHCR
+      - name: Push images to GHCR
         run: |
-          docker tag nginx_petbio:latest ${{ secrets.DOCKERHUB_USERNAME }}/nginx_petbio:latest
-          docker tag petbio_platform:latest ${{ secrets.DOCKERHUB_USERNAME }}/petbio_platform:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nginx_petbio:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/petbio_platform:latest
+          docker push ghcr.io/rnbm2025-petbioweb/nginx_petbio:latest
+          docker push ghcr.io/rnbm2025-petbioweb/petbio_platform:latest
+          
