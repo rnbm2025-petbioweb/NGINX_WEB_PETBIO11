@@ -7,9 +7,9 @@ session_start();
 //require_once 'sesion_global.php';
 
 //require_once(__DIR__ . '/../dir_config/sesion_global.php');
-require_once(__DIR__ . '/dir_config/sesion_global.php');
+require_once(__DIR__ . '../dir_config/sesion_global.php');
 
-require_once(__DIR__ . '/../dir_config/conexion_petbio_nueva.php');
+//require_once(__DIR__ . '/../dir_config/conexion_petbio_nueva.php');
 
 /*
 define('BASE_PATH', dirname(__DIR__)); // define la raíz del proyecto
