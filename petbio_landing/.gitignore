@@ -1,0 +1,29 @@
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Archivos temporales
+*.log
+*.tmp
+*.swp
+
+# Archivos PHP de configuración sensibles
+config/*.php
+dir_config/*.php
+
+# Sesiones, caché
+sessions/
+cache/
+
+# Archivos PDF, imágenes de usuario o generados
+*.pdf
+*.jpg
+*.jpeg
+*.png
+
+# Node / Composer
+node_modules/
+vendor/
+
+# Archivos de entorno
+.env
