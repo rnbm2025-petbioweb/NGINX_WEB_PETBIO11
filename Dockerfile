@@ -28,6 +28,7 @@ RUN apt-get update && \
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY security-headers.conf /etc/nginx/security-headers.conf
 COPY conf.d/ /etc/nginx/conf.d/
+COPY dir_config /var/www/html/dir_config
 
 # ---------------------------------------------------------
 # 📁 Copiar el código de la landing y formularios PHP
