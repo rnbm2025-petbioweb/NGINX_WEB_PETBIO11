@@ -1,29 +1,94 @@
-# Archivos del sistema
+cat > .gitignore << 'EOF'
+# =======================================
+# LOGS Y ARCHIVOS TEMPORALES
+# =======================================
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# =======================================
+# CONFIGURACIÓN Y SECRETOS
+# =======================================
+.env
+.env.*
+*.pem
+*.key
+
+# =======================================
+# INFRAESTRUCTURA Y VOLUMENES (solo si se genera algo local)
+# =======================================
+volumes/
+certbot/
+mysql-data/
+reciclaje_temp/
+
+# =======================================
+# NODE / COMPOSER / PYTHON (en caso de dependencias)
+# =======================================
+node_modules/
+vendor/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# =======================================
+# ARCHIVOS DEL SISTEMA
+# =======================================
 .DS_Store
 Thumbs.db
 
-# Archivos temporales
-*.log
-*.tmp
-*.swp
+# =======================================
+# ARCHIVOS COMPRIMIDOS Y DUMPS
+# =======================================
+*.zip
+*.tar.gz
+*.tar
+*.sql
+*.sql.gz
 
-# Archivos PHP de configuración sensibles
-config/*.php
-dir_config/*.php
-
-# Sesiones, caché
-sessions/
+# =======================================
+# DIRECTORIOS TEMPORALES
+# =======================================
+tmp/
+temp/
 cache/
 
-# Archivos PDF, imágenes de usuario o generados
-*.pdf
-*.jpg
-*.jpeg
-*.png
+# =======================================
+# CARPETAS DINÁMICAS (uploads, PDFs, almacenamiento de usuario)
+# =======================================
+petbio_storage/
+uploads/
+documentos/
+dir_pdf/
+dir_uploads/
 
-# Node / Composer
-node_modules/
-vendor/
+# =======================================
+# EXCEPCIONES: mantener recursos versionados
+# =======================================
+!imagenes_guias_2025/
 
-# Archivos de entorno
-.env
+# =======================================
+# ARCHIVOS TEMPORALES INTERNOS DEL SITIO
+# =======================================
+libs/phpqrcode/*.png-errors.txt
+log_tareas.txt
+phpqrcode/
+
+# =======================================
+# FORMULARIOS O MOCKUPS (si los tienes en test)
+# =======================================
+formularios/
+formularios_petbio/
+
+# =======================================
+# IDEs Y BUILDS (VSCode, Webpack, etc.)
+# =======================================
+.vscode/
+.idea/
+dist/
+build/
+EOF
