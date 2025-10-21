@@ -3,7 +3,7 @@
  * 🌐 Conexión híbrida PETBIO: MySQL → fallback Supabase
  * Compatible con Render, Termux y Docker.
  */
-require_once(__DIR__ . '/vendor/autoload.php');
+//require_once(__DIR__ . '/vendor/autoload.php');
 
 $MYSQL_HOST = getenv('MYSQL_HOST') ?: '127.0.0.1';
 $MYSQL_PORT = getenv('MYSQL_PORT') ?: '3306';
