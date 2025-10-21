@@ -33,3 +33,4 @@ jobs:
           docker push ghcr.io/rnbm2025-petbioweb/nginx_petbio:latest
           docker push ghcr.io/rnbm2025-petbioweb/petbio_platform:latest
           
+
