@@ -1,22 +1,17 @@
 <?php
 session_start();
 
+// =============================
+// 🔧 Inclusión de archivos base
+// =============================
 
-//require_once 'config/conexion.php';
-
-//require_once 'sesion_global.php';
-
-//require_once(__DIR__ . '/../dir_config/sesion_global.php');
+// Ruta hacia los archivos de configuración
 require_once(__DIR__ . '/../petbio_landing/dir_config/sesion_global.php');
+require_once(__DIR__ . '/../petbio_landing/dir_config/conexion_petbio_nueva.php');
 
-require_once(__DIR__ . '/..petbio_landing/dir_config/conexion_petbio_nueva.php');
-
-/*
-define('BASE_PATH', dirname(__DIR__)); // define la raíz del proyecto
-require_once BASE_PATH . '/dir_config/sesion_global.php';
-*/
-
-// Conexión segura a la base de datos
+// =============================
+// 💾 Conexión a la base de datos
+// =============================
 $host = 'mysql_petbio_secure';
 $puerto = 3306;
 $dbname = 'db__produccion_petbio_segura_2025';
@@ -30,7 +25,9 @@ try {
   die("❌ Error de conexión: " . $e->getMessage());
 }
 
-// Procesar formulario
+// =============================
+// 🧾 Procesar formulario
+// =============================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $username = trim($_POST['username'] ?? '');
   $lastname = trim($_POST['lastname'] ?? '');
@@ -42,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $tieneMascotas = $_POST['tiene_mascotas'] ?? '0';
   $terminosAceptados = isset($_POST['terminos']);
 
-  // Validaciones
+  // Validaciones básicas
   if (!$username || !$lastname || !$email || !$password || !$confirmPassword || !$documento || !$tipoPersona || !$terminosAceptados) {
     echo "<script>alert('⚠️ Todos los campos son obligatorios y debes aceptar los términos.'); window.history.back();</script>";
     exit;
@@ -56,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $dominiosPermitidos = ['gmail.com', 'hotmail.com', 'outlook.com', 'siac2025.com', 'petbio.com.co'];
   $prohibidos = ['example', 'test', 'demo', 'prueba', 'ejemplo'];
 
-  foreach ($prohibidos as $prohibido) {
-    if (stripos($email, $prohibido) !== false) {
+  foreach ($prohibidos as $p) {
+    if (stripos($email, $p) !== false) {
       echo "<script>alert('⚠️ El correo no es válido. Usa uno real.'); window.history.back();</script>";
       exit;
     }
@@ -82,6 +79,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
   }
 
+  // =============================
+  // ✅ Registro en base de datos
+  // =============================
   try {
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
     $insert = $pdo->prepare("
@@ -106,32 +106,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['nombre'] = $username;
     $_SESSION['apellidos'] = $lastname;
 
-// 👇 Identidad Petbio
-$esCuidador = ($tieneMascotas === '1') ? 1 : 0;
-$rol = $esCuidador ? 'CUID' : 'USER';
-$petbioID = sprintf("PETBIO-%s-%06d", $rol, $id_usuario);
+    // 👇 Identidad PETBIO
+    $esCuidador = ($tieneMascotas === '1') ? 1 : 0;
+    $rol = $esCuidador ? 'CUID' : 'USER';
+    $petbioID = sprintf("PETBIO-%s-%06d", $rol, $id_usuario);
 
-$stmt = $pdo->prepare("
-    INSERT INTO identidad_petbio (id_usuario, id_petbio, es_cuidador)
-    VALUES (:id_usuario, :id_petbio, :es_cuidador)
-");
-$stmt->execute([
-    ':id_usuario' => $id_usuario,
-    ':id_petbio' => $petbioID,
-    ':es_cuidador' => $esCuidador
-]);
+    $stmt = $pdo->prepare("
+        INSERT INTO identidad_petbio (id_usuario, id_petbio, es_cuidador)
+        VALUES (:id_usuario, :id_petbio, :es_cuidador)
+    ");
+    $stmt->execute([
+        ':id_usuario' => $id_usuario,
+        ':id_petbio' => $petbioID,
+        ':es_cuidador' => $esCuidador
+    ]);
 
-// Registro de actividad
+    // 🔍 Registro de actividad
     $ip = $_SERVER['REMOTE_ADDR'] ?? 'desconocido';
     $navegador = $_SERVER['HTTP_USER_AGENT'] ?? 'sin user-agent';
     $log = $pdo->prepare("INSERT INTO registro_ingresos (id_usuario, direccion_ip, navegador) VALUES (:id, :ip, :nav)");
     $log->execute([':id' => $id_usuario, ':ip' => $ip, ':nav' => $navegador]);
 
-
-    //echo "<script>alert('✅ Registro exitoso. Ahora continúa con la identidad biométrica.'); window.location.href = 'identidad_rubm.php';</script>";
     echo "<script>alert('✅ Registro exitoso. Tu ID PETBIO es: $petbioID. Ahora continúa con la identidad biométrica.'); window.location.href = 'identidad_rubm.php';</script>";
-
     exit;
+
   } catch (PDOException $e) {
     echo "<script>alert('❌ Error al guardar: " . addslashes($e->getMessage()) . "'); window.history.back();</script>";
     exit;
@@ -165,7 +163,7 @@ $stmt->execute([
 </head>
 <body class="bg-petbiofondo text-petbioazul font-bahn">
 
-<!-- Header con menú -->
+<!-- Header -->
 <header class="bg-white shadow-md p-4 flex justify-between items-center">
   <div>
     <h1 class="text-2xl font-bold text-petbioazul">🐾 PETBIO</h1>
@@ -186,13 +184,15 @@ $stmt->execute([
 </header>
 
 <script>
-  function toggleMenu() {
-    const menu = document.getElementById('dropdownMenu');
-    menu.classList.toggle('hidden');
-  }
+function toggleMenu() {
+  document.getElementById('dropdownMenu').classList.toggle('hidden');
+}
+function toggleAccordion(id) {
+  document.getElementById(id).classList.toggle('hidden');
+}
 </script>
 
-<!-- Sección Guías -->
+<!-- Guías -->
 <section class="max-w-3xl mx-auto mt-10">
   <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
     <h2 class="text-xl font-semibold mb-4">📋 Guías Paso a Paso</h2>
@@ -222,33 +222,26 @@ $stmt->execute([
   </div>
 </section>
 
-<script>
-  function toggleAccordion(id) {
-    const section = document.getElementById(id);
-    section.classList.toggle('hidden');
-  }
-</script>
-
-<!-- Formulario de Registro -->
+<!-- Formulario -->
 <main class="max-w-lg mx-auto mt-10 bg-white rounded-xl shadow-lg p-6">
   <h2 class="text-2xl font-semibold mb-6 text-center">Registro de Usuarios PETBIO RUBM</h2>
   <form method="POST" class="space-y-4">
-    <div><label for="username" class="block font-medium">Nombres:</label><input type="text" id="username" name="username" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
-    <div><label for="lastname" class="block font-medium">Apellidos:</label><input type="text" id="lastname" name="lastname" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
-    <div><label for="email" class="block font-medium">Correo Electrónico:</label><input type="email" id="email" name="email" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
-    <div><label for="password" class="block font-medium">Contraseña:</label><input type="password" id="password" name="password" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
-    <div><label for="confirmPassword" class="block font-medium">Confirmar Contraseña:</label><input type="password" id="confirmPassword" name="confirmPassword" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
-    <div><label for="Documento_identidad" class="block font-medium">Documento de Identidad:</label><input type="number" id="Documento_identidad" name="Documento_identidad" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
+    <div><label class="block font-medium">Nombres:</label><input type="text" name="username" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
+    <div><label class="block font-medium">Apellidos:</label><input type="text" name="lastname" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
+    <div><label class="block font-medium">Correo Electrónico:</label><input type="email" name="email" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
+    <div><label class="block font-medium">Contraseña:</label><input type="password" name="password" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
+    <div><label class="block font-medium">Confirmar Contraseña:</label><input type="password" name="confirmPassword" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
+    <div><label class="block font-medium">Documento de Identidad:</label><input type="number" name="Documento_identidad" required class="w-full rounded border border-gray-300 px-4 py-2"></div>
     <div>
-      <label for="tipo_Persona" class="block font-medium">Tipo de Persona:</label>
-      <select id="tipo_Persona" name="tipo_Persona" required class="w-full rounded border border-gray-300 px-4 py-2">
+      <label class="block font-medium">Tipo de Persona:</label>
+      <select name="tipo_Persona" required class="w-full rounded border border-gray-300 px-4 py-2">
         <option value="Natural">Natural</option>
         <option value="Jurídica">Jurídica</option>
       </select>
     </div>
     <div>
-      <label for="tiene_mascotas" class="block font-medium">¿Tiene Mascotas?</label>
-      <select id="tiene_mascotas" name="tiene_mascotas" required class="w-full rounded border border-gray-300 px-4 py-2">
+      <label class="block font-medium">¿Tiene Mascotas?</label>
+      <select name="tiene_mascotas" required class="w-full rounded border border-gray-300 px-4 py-2">
         <option value="1">Sí</option>
         <option value="0">No</option>
       </select>
