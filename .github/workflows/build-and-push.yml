@@ -1,39 +1,108 @@
+# ============================================================
+# 🚀 Build & Push PETBIO11 to GHCR
+# ------------------------------------------------------------
+# Este workflow compila y sube las imágenes Docker del proyecto
+# PETBIO11 (NGINX y Plataforma principal) al GitHub Container
+# Registry (GHCR).
+#
+# 🧠 Beneficios:
+#   - Automatiza los despliegues cuando haces push a main.
+#   - Versiona las imágenes por commit SHA y etiqueta "latest".
+#   - Garantiza consistencia entre Render y GitHub Actions.
+# ============================================================
+
 name: 🚀 Build & Push PETBIO11 to GHCR
 
 on:
+  # 🔁 Ejecutar automáticamente cuando haya cambios en la rama main
   push:
     branches: [ "main" ]
+
+  # 🔍 Permitir ejecución manual desde PRs (opcional)
   pull_request:
     branches: [ "main" ]
 
+# ============================================================
+# 🧩 JOB PRINCIPAL
+# ============================================================
 jobs:
   build:
+    # 💻 GitHub usa un runner Linux para compilar Docker
     runs-on: ubuntu-latest
 
     steps:
+      # --------------------------------------------------------
+      # 1️⃣ Clonar el repositorio
+      # --------------------------------------------------------
       - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
+      # --------------------------------------------------------
+      # 2️⃣ Autenticarse en GitHub Container Registry (GHCR)
+      # --------------------------------------------------------
+      # 💡 GHCR_PAT es un token personal con permisos de:
+      #     - write:packages
+      #     - read:packages
+      #     - delete:packages (opcional)
+      #     - repo
+      #
+      # 📍 Se configura desde GitHub → Settings → Secrets → Actions
+      #     Nombre: GHCR_PAT
+      # --------------------------------------------------------
       - name: 🔐 Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
 
+      # --------------------------------------------------------
+      # 3️⃣ Construir la imagen NGINX
+      # --------------------------------------------------------
+      #   - Usa el Dockerfile del directorio NGINX_WEB_PETBIO11
+      #   - Etiqueta doble:
+      #       latest → para Render (última estable)
+      #       sha → versión exacta del commit
+      # --------------------------------------------------------
       - name: 🧱 Build NGINX image
         run: |
           docker build ./NGINX_WEB_PETBIO11 \
             -f ./NGINX_WEB_PETBIO11/Dockerfile \
-            -t ghcr.io/${{ github.repository_owner }}/nginx_petbio11:latest
+            -t ghcr.io/${{ github.repository_owner }}/nginx_petbio11:latest \
+            -t ghcr.io/${{ github.repository_owner }}/nginx_petbio11:${{ github.sha }}
 
+      # --------------------------------------------------------
+      # 4️⃣ Construir la imagen de la plataforma principal (PHP-FPM)
+      # --------------------------------------------------------
+      #   - Similar al anterior, pero para el backend principal
+      # --------------------------------------------------------
       - name: 🧪 Build Platform image
         run: |
           docker build ./petbio11-platform \
             -f ./petbio11-platform/Dockerfile \
-            -t ghcr.io/${{ github.repository_owner }}/petbio_platform:latest
+            -t ghcr.io/${{ github.repository_owner }}/petbio_platform:latest \
+            -t ghcr.io/${{ github.repository_owner }}/petbio_platform:${{ github.sha }}
 
+      # --------------------------------------------------------
+      # 5️⃣ Subir las imágenes a GHCR
+      # --------------------------------------------------------
+      #   - Sube las dos versiones por cada imagen:
+      #       latest → Render siempre usará esta
+      #       sha → sirve como histórico / rollback
+      # --------------------------------------------------------
       - name: 🚀 Push images to GHCR
         run: |
           docker push ghcr.io/${{ github.repository_owner }}/nginx_petbio11:latest
+          docker push ghcr.io/${{ github.repository_owner }}/nginx_petbio11:${{ github.sha }}
           docker push ghcr.io/${{ github.repository_owner }}/petbio_platform:latest
+          docker push ghcr.io/${{ github.repository_owner }}/petbio_platform:${{ github.sha }}
+
+# ============================================================
+# ✅ NOTAS FINALES
+# ------------------------------------------------------------
+# - Este workflow solo se ejecuta si hay cambios en main.
+# - Render puede consumir las imágenes desde:
+#     ghcr.io/rnbm2025-petbioweb/nginx_petbio11:latest
+#     ghcr.io/rnbm2025-petbioweb/petbio_platform:latest
+# - Asegúrate de haber configurado GHCR_PAT en GitHub Secrets.
+# ============================================================
