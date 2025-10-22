@@ -1,0 +1,10 @@
+# Archivos sensibles
+.env
+*.zip
+
+# Archivos temporales / binarios
+ngrok*
+cloudflared*
+*.log
+*.sql
+/storage/
