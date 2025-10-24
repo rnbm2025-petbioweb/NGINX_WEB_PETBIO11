@@ -16,7 +16,8 @@ $MYSQL_USER = getenv('MYSQL_USER') ?: 'root';
 $MYSQL_PASS = getenv('MYSQL_PASSWORD') ?: 'R00t_Segura_2025!';
 $MYSQL_DB   = getenv('MYSQL_DATABASE') ?: 'db__produccion_petbio_segura_2025';
 
-$SUPABASE_HOST = getenv('SUPABASE_HOST') ?: 'db.jbsxvonnrahhfffeacdy.supabase.co';
+//$SUPABASE_HOST = getenv('SUPABASE_HOST') ?: 'db.jbsxvonnrahhfffeacdy.supabase.co';
+$SUPABASE_HOST = 'db-ipv4.supabase.co';
 $SUPABASE_PORT = getenv('SUPABASE_PORT') ?: '5432';
 $SUPABASE_USER = getenv('SUPABASE_USER') ?: 'postgres';
 $SUPABASE_PASS = getenv('SUPABASE_PASS') ?: 'BiometriaPetbio2025*';
