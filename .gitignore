@@ -8,3 +8,4 @@ cloudflared*
 *.log
 *.sql
 /storage/
+000_Dockerfíle_git24oct.txt
