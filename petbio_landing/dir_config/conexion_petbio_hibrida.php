@@ -35,29 +35,33 @@ try {
     );
     define('DB_ENGINE', 'MySQL');
     error_log("✅ Conectado a MySQL local ($MYSQL_HOST:$MYSQL_PORT)");
-}
-// =========================================================
-// 🔄 Fallback → Supabase (PostgreSQL remoto con SSL)
-// =========================================================
-catch (PDOException $e) {
+
+} catch (PDOException $e) {
     error_log("⚠️ MySQL no disponible: " . $e->getMessage());
 
-     try {
-        // 🔸 Fallback → conexión segura a Supabase (PostgreSQL con SSL, IPv4 forzado)
+    // =====================================================
+    // 🔄 Fallback → Supabase (PostgreSQL remoto con SSL IPv4)
+    // =====================================================
+    try {
+        // 🔸 Forzar conexión IPv4
         $ipv4 = gethostbyname($SUPABASE_HOST); // convierte dominio a IPv4
         $pdo = new PDO(
             "pgsql:host=$ipv4;port=$SUPABASE_PORT;dbname=$SUPABASE_DB;sslmode=require",
-            $SUPABASE_USER, $SUPABASE_PASS,
+            $SUPABASE_USER,
+            $SUPABASE_PASS,
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
         define('DB_ENGINE', 'Supabase');
         error_log("✅ Conectado a Supabase ($ipv4:$SUPABASE_PORT) con SSL (IPv4)");
+
     } catch (PDOException $e2) {
+        // ❌ Ningún motor disponible
         die("❌ Error fatal: no se pudo conectar ni a MySQL ni a Supabase → " . $e2->getMessage());
     }
+}
 
 // =========================================================
-// 🔎 Utilidad opcional → muestra el motor actual
+// 🔎 Utilidad opcional → mostrar motor actual (solo CLI)
 // =========================================================
 if (php_sapi_name() === 'cli' && basename($_SERVER['PHP_SELF']) === basename(__FILE__)) {
     echo "🧩 Usando motor: " . DB_ENGINE . PHP_EOL;
