@@ -39,13 +39,9 @@ RUN chown -R www-data:www-data /var/www/html && \
 # ---------------------------------------------------------
 # 🌍 Exponer el puerto HTTP (Render usa HTTPS externo)
 # ---------------------------------------------------------
-#EXPOSE 80
-
-# ---------------------------------------------------------
-# 🚀 Comando final (levanta PHP-FPM y Nginx)
-# ---------------------------------------------------------
-#CMD ["bash", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
-
-
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+
+# ---------------------------------------------------------
+# 🚀 Comando final (levanta PHP-FPM y Nginx juntos)
+# ---------------------------------------------------------
+CMD ["bash", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
