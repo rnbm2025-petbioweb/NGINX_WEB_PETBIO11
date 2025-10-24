@@ -35,7 +35,9 @@ try {
     error_log("⚠️ MySQL no disponible: " . $e->getMessage());
     try {
         // 🔸 Conexión SSL a Supabase (solo IPv4)
-        $dsn_pg = "pgsql:host=$SUPABASE_HOST;port=$SUPABASE_PORT;dbname=$SUPABASE_DB;sslmode=require";
+//        $dsn_pg = "pgsql:host=$SUPABASE_HOST;port=$SUPABASE_PORT;dbname=$SUPABASE_DB;sslmode=require";
+        $dsn_pg = "pgsql:host=0.tcp.supabase.co;port=$SUPABASE_PORT;dbname=$SUPABASE_DB;sslmode=require";
+
         $pdo = new PDO($dsn_pg, $SUPABASE_USER, $SUPABASE_PASS, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
