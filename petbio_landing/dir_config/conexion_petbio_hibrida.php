@@ -1,8 +1,7 @@
 <?php
 /**
- * 🌐 Conexión híbrida PETBIO:
- *    1️⃣ MySQL local → si falla, 2️⃣ Supabase (PostgreSQL con SSL IPv4)
- * Compatible con Render, Termux y Docker.
+ * 🌐 Conexión híbrida PETBIO (Render-safe)
+ * 1️⃣ MySQL local → fallback 2️⃣ Supabase PostgreSQL (SSL + IPv4)
  */
 
 error_reporting(E_ALL);
@@ -44,16 +43,15 @@ catch (PDOException $e) {
     error_log("⚠️ MySQL no disponible: " . $e->getMessage());
 
     try {
-        // 🔸 Resolver IPv4 explícitamente
-        $ipv4 = trim(shell_exec("dig +short A $SUPABASE_HOST | head -n1"));
-        if (!$ipv4) {
-            $ipv4 = gethostbyname($SUPABASE_HOST);
-        }
-        if ($ipv4 === $SUPABASE_HOST || !$ipv4) {
+        // 🧠 Resolver IPv4 explícitamente
+        $ipv4 = gethostbyname($SUPABASE_HOST);
+
+        // Si gethostbyname no cambia el hostname, significa que falló
+        if ($ipv4 === $SUPABASE_HOST || empty($ipv4) || filter_var($ipv4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
             throw new Exception("No se pudo resolver IPv4 para $SUPABASE_HOST");
         }
 
-        // 🔹 Conectar usando solo IPv4 y SSL
+        // Conexión SSL con IPv4
         $dsn_pg = "pgsql:host=$ipv4;port=$SUPABASE_PORT;dbname=$SUPABASE_DB;sslmode=require";
         $pdo = new PDO($dsn_pg, $SUPABASE_USER, $SUPABASE_PASS, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
