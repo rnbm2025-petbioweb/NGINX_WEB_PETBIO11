@@ -42,20 +42,19 @@ try {
 catch (PDOException $e) {
     error_log("⚠️ MySQL no disponible: " . $e->getMessage());
 
-    try {
+     try {
+        // 🔸 Fallback → conexión segura a Supabase (PostgreSQL con SSL, IPv4 forzado)
+        $ipv4 = gethostbyname($SUPABASE_HOST); // convierte dominio a IPv4
         $pdo = new PDO(
-            "pgsql:host=$SUPABASE_HOST;port=$SUPABASE_PORT;dbname=$SUPABASE_DB;sslmode=require",
-            $SUPABASE_USER,
-            $SUPABASE_PASS,
+            "pgsql:host=$ipv4;port=$SUPABASE_PORT;dbname=$SUPABASE_DB;sslmode=require",
+            $SUPABASE_USER, $SUPABASE_PASS,
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
         define('DB_ENGINE', 'Supabase');
-        error_log("✅ Conectado a Supabase ($SUPABASE_HOST:$SUPABASE_PORT) con SSL");
+        error_log("✅ Conectado a Supabase ($ipv4:$SUPABASE_PORT) con SSL (IPv4)");
     } catch (PDOException $e2) {
-        error_log("❌ Error fatal: no se pudo conectar ni a MySQL ni a Supabase → " . $e2->getMessage());
-        die("Error de conexión a la base de datos. Consulte los logs.");
+        die("❌ Error fatal: no se pudo conectar ni a MySQL ni a Supabase → " . $e2->getMessage());
     }
-}
 
 // =========================================================
 // 🔎 Utilidad opcional → muestra el motor actual
