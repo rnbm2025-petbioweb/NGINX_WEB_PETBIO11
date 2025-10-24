@@ -1,39 +1,55 @@
 <?php
-// require_once __DIR__ . '/vendor/autoload.php';
+// ==========================================================
+// 🔍 TEST DE CONEXIÓN MARIADB LOCAL (Termux)
+// Autor: ChatGPT + Juan Osorno
+// Fecha: 2025-10-24
+// ==========================================================
 
-// Cargar variables del .env
-if (file_exists(__DIR__ . '/.env')) {
-    $lines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos($line, '=') !== false) {
-            list($name, $value) = explode('=', $line, 2);
-            $_ENV[trim($name)] = trim($value);
-        }
+// Datos de conexión
+$host = "127.0.0.1";  // 👈 importante: usar IP, no "localhost"
+$user = "root";
+$pass = "R00t_Segura_2025!";
+$db   = "db__produccion_petbio_segura_2025";
+
+// Ruta del socket (para fallback si el TCP falla)
+$socket_path = "/data/data/com.termux/files/usr/var/run/mysqld.sock";
+
+// ----------------------------------------------------------
+// 1️⃣ Intentar conexión por TCP/IP
+// ----------------------------------------------------------
+$conn = @new mysqli($host, $user, $pass, $db);
+
+if ($conn->connect_error) {
+    echo "⚠️ Conexión TCP falló: " . $conn->connect_error . "\n";
+    echo "🔁 Intentando conexión por socket directo...\n";
+
+    // ----------------------------------------------------------
+    // 2️⃣ Intentar conexión usando socket directo
+    // ----------------------------------------------------------
+    $conn = @new mysqli('localhost', $user, $pass, $db, 0, $socket_path);
+
+    if ($conn->connect_error) {
+        die("❌ Error de conexión total: " . $conn->connect_error . "\n");
+    } else {
+        echo "✅ Conexión exitosa a la base de datos (por socket).\n";
     }
+} else {
+    echo "✅ Conexión exitosa a la base de datos (por TCP/IP).\n";
 }
 
-$host = $_ENV['MYSQL_HOST'] ?? '127.0.0.1';
-$user = $_ENV['MYSQL_USER'] ?? 'root';
-$pass = $_ENV['MYSQL_PASSWORD'] ?? '';
-$db   = $_ENV['MYSQL_DATABASE'] ?? '';
-
-$mysqli = new mysqli($host, $user, $pass, $db);
-
-if ($mysqli->connect_error) {
-    die("❌ Error de conexión: " . $mysqli->connect_error);
-}
-
-echo "✅ Conexión exitosa a la base de datos '{$db}' en {$host}\n";
-
-$result = $mysqli->query("SHOW TABLES;");
-if ($result) {
-    echo "📋 Tablas encontradas:\n";
+// ----------------------------------------------------------
+// 3️⃣ Mostrar tablas disponibles
+// ----------------------------------------------------------
+$result = $conn->query("SHOW TABLES;");
+if ($result && $result->num_rows > 0) {
+    echo "📋 Tablas encontradas en '$db':\n";
     while ($row = $result->fetch_array()) {
         echo " - " . $row[0] . "\n";
     }
 } else {
-    echo "⚠️ No se pudieron listar las tablas.\n";
+    echo "⚠️ No se encontraron tablas o no se pudo ejecutar la consulta.\n";
 }
 
-$mysqli->close();
+// ----------------------------------------------------------
+$conn->close();
 ?>
