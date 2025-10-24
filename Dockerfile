@@ -9,6 +9,7 @@ FROM php:8.2-fpm
 RUN apt-get update && \
     apt-get install -y nginx nano bash curl unzip libpq-dev && \
     docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql && \
+    docker-php-ext-enable pdo_pgsql && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------
